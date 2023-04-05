@@ -46,19 +46,21 @@ def muti_bce_loss_fusion(d0, d1, d2, d3, d4, d5, d6, labels_v):
 
 # ------- 2. set the directory of training dataset --------
 
-model_name = 'u2net' #'u2netp'
+#model_name = 'u2net' #'u2netp'
+model_name = 'u2net' 
 
-data_dir = os.path.join(os.getcwd(), 'train_data' + os.sep)
-tra_image_dir = os.path.join('DUTS', 'DUTS-TR', 'DUTS-TR', 'im_aug' + os.sep)
-tra_label_dir = os.path.join('DUTS', 'DUTS-TR', 'DUTS-TR', 'gt_aug' + os.sep)
+
+data_dir = os.path.join(os.getcwd(), 'dataset/palm_dataset' + os.sep)
+tra_image_dir = os.path.join( 'images' + os.sep)
+tra_label_dir = os.path.join( 'masks' + os.sep)
 
 image_ext = '.jpg'
-label_ext = '.png'
+label_ext = '.jpg'
 
 model_dir = os.path.join(os.getcwd(), 'saved_models', model_name + os.sep)
 
 epoch_num = 100000
-batch_size_train = 12
+batch_size_train = 4
 batch_size_val = 1
 train_num = 0
 val_num = 0
@@ -100,8 +102,28 @@ if(model_name=='u2net'):
 elif(model_name=='u2netp'):
     net = U2NETP(3,1)
 
+# if torch.cuda.is_available():
+#     net.cuda()
+
+model_dir =  "saved_models/u2net/u2net_human_seg.pth"
+
+if(model_name=='u2net'):
+    print("...load U2NET---173.6 MB")
+    net = U2NET(3,1)
+elif(model_name=='u2netp'):
+    print("...load U2NEP---4.7 MB")
+    net = U2NETP(3,1)
+
 if torch.cuda.is_available():
+    print("Gpu used----")
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu" ) ## specify the GPU id's, GPU id's start from 0.
+
+    net.load_state_dict(torch.load(model_dir))
     net.cuda()
+else:
+    net.load_state_dict(torch.load(model_dir, map_location='cpu'))
+net.eval()
+
 
 # ------- 4. define optimizer --------
 print("---define optimizer...")
@@ -154,9 +176,18 @@ for epoch in range(0, epoch_num):
         print("[epoch: %3d/%3d, batch: %5d/%5d, ite: %d] train loss: %3f, tar: %3f " % (
         epoch + 1, epoch_num, (i + 1) * batch_size_train, train_num, ite_num, running_loss / ite_num4val, running_tar_loss / ite_num4val))
 
+        print("It", ite_num)
         if ite_num % save_frq == 0:
 
-            torch.save(net.state_dict(), model_dir + model_name+"_bce_itr_%d_train_%3f_tar_%3f.pth" % (ite_num, running_loss / ite_num4val, running_tar_loss / ite_num4val))
+            save_path = "palm_saved_models/"
+            if not os.path.exists(save_path):
+                os.makedirs(save_path)
+
+
+            save_file_name = save_path + model_name+"new_bce_itr_%d_train_%3f_tar_%3f.pth" % (ite_num, running_loss / ite_num4val, running_tar_loss / ite_num4val)
+
+            print(save_file_name, "-----------------------------------------")
+            torch.save(net.state_dict(), save_file_name)
             running_loss = 0.0
             running_tar_loss = 0.0
             net.train()  # resume train

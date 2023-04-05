@@ -2,22 +2,23 @@ import torch.utils.data
 from data.base_data_loader import BaseDataLoader
 
 
-def CreateDataset(opt):
+def CreateDataset(opt,file_=None):
     dataset = None
     from data.aligned_dataset import AlignedDataset
     dataset = AlignedDataset()
 
     print("dataset [%s] was created" % (dataset.name()))
-    dataset.initialize(opt)
+    print("---------------",file_)
+    dataset.initialize(opt,file_=file_)
     return dataset
 
 class CustomDatasetDataLoader(BaseDataLoader):
     def name(self):
         return 'CustomDatasetDataLoader'
 
-    def initialize(self, opt):
+    def initialize(self, opt,file_):
         BaseDataLoader.initialize(self, opt)
-        self.dataset = CreateDataset(opt)
+        self.dataset = CreateDataset(opt,file_)
         self.dataloader = torch.utils.data.DataLoader(
             self.dataset,
             batch_size=opt.batchSize,

@@ -4,20 +4,24 @@ from data.image_folder import make_dataset
 from PIL import Image
 
 class AlignedDataset(BaseDataset):
-    def initialize(self, opt):
+    def initialize(self, opt,file_=None):
         self.opt = opt
         self.root = opt.dataroot    
 
         ### input A (label maps)
         dir_A = '_A' if self.opt.label_nc == 0 else '_label'
         self.dir_A = os.path.join(opt.dataroot, opt.phase + dir_A)
-        self.A_paths = sorted(make_dataset(self.dir_A))
+        #if file_ != None:
+        self.A_paths = [file_]
+        #else:
+           # self.A_paths = sorted(make_dataset(self.dir_A))
 
         ### input B (real images)
         if opt.isTrain or opt.use_encoded_image:
             dir_B = '_B' if self.opt.label_nc == 0 else '_img'
             self.dir_B = os.path.join(opt.dataroot, opt.phase + dir_B)  
             self.B_paths = sorted(make_dataset(self.dir_B))
+
 
         ### instance maps
         if not opt.no_instance:
@@ -35,11 +39,13 @@ class AlignedDataset(BaseDataset):
     def __getitem__(self, index):        
         ### input A (label maps)
         A_path = self.A_paths[index]              
-        A = Image.open(A_path)        
+        A = Image.open(A_path)   
         params = get_params(self.opt, A.size)
         if self.opt.label_nc == 0:
+
             transform_A = get_transform(self.opt, params)
             A_tensor = transform_A(A.convert('RGB'))
+            #A_tensor = transform_A(A)
         else:
             transform_A = get_transform(self.opt, params, method=Image.NEAREST, normalize=False)
             A_tensor = transform_A(A) * 255.0
@@ -47,6 +53,7 @@ class AlignedDataset(BaseDataset):
         B_tensor = inst_tensor = feat_tensor = 0
         ### input B (real images)
         if self.opt.isTrain or self.opt.use_encoded_image:
+
             B_path = self.B_paths[index]   
             B = Image.open(B_path).convert('RGB')
             transform_B = get_transform(self.opt, params)      
@@ -54,6 +61,7 @@ class AlignedDataset(BaseDataset):
 
         ### if using instance maps        
         if not self.opt.no_instance:
+
             inst_path = self.inst_paths[index]
             inst = Image.open(inst_path)
             inst_tensor = transform_A(inst)
@@ -62,7 +70,7 @@ class AlignedDataset(BaseDataset):
                 feat_path = self.feat_paths[index]            
                 feat = Image.open(feat_path).convert('RGB')
                 norm = normalize()
-                feat_tensor = norm(transform_A(feat))                            
+                feat_tensor = norm(transform_A(feat))     
 
         input_dict = {'label': A_tensor, 'inst': inst_tensor, 'image': B_tensor, 
                       'feat': feat_tensor, 'path': A_path}

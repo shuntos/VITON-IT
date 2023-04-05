@@ -6,11 +6,21 @@ from torch.autograd import Variable
 from collections import OrderedDict
 from subprocess import call
 import fractions
-def lcm(a,b): return abs(a * b)/fractions.gcd(a,b) if a and b else 0
+def gcd(a, b):
+    """Calculate the Greatest Common Divisor of a and b.
+
+    Unless b==0, the result will have the same sign as b (so that when
+    b is divided by it, the result comes out positive).
+    """
+    while b:
+        a, b = b, a%b
+    return a
+
+def lcm(a,b): return abs(a * b)/gcd(a,b) if a and b else 0
 
 from options.train_options import TrainOptions
 from data.data_loader import CreateDataLoader
-from models.models import create_model
+from models_.models import create_model
 import util.util as util
 from util.visualizer import Visualizer
 
@@ -33,6 +43,14 @@ if opt.debug:
     opt.niter_decay = 0
     opt.max_dataset_size = 10
 
+opt.continue_train = "True" 
+opt.batchsize = 2
+opt.name=  "vd2.0_2"
+opt.no_instance = True
+opt.label_nc = 0
+opt.dataroot =  "./datasets/vd2.0_2"
+opt.gpu_ids= [0]
+ 
 data_loader = CreateDataLoader(opt)
 dataset = data_loader.load_data()
 dataset_size = len(data_loader)

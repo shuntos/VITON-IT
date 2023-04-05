@@ -31,14 +31,25 @@ def rgb_to_mask(image):
 
 def get_cropped_clean_mask(mask):# Removing small contour and performing erode and dilation to smooth edges
     blank_img = np.zeros([mask.shape[0],mask.shape[1],3], dtype=np.uint8)
+
+
+
     kernel = np.ones((5, 5), np.uint8)
+ 
+
     mask = cv2.erode(mask, kernel, iterations=1)
     mask = cv2.dilate(mask, kernel, iterations=1)
+
+
     cnt, mask_box = get_contour(mask, change_color=False)
     cv2.drawContours(blank_img, [cnt], -1, (255, 255, 255),thickness=-1)
+
     cropped_mask = blank_img[mask_box[1]:mask_box[3], mask_box[0]:mask_box[2]]
 
+    #cropped_mask =  create_3_channel(cropped_mask)
+
     return cropped_mask, blank_img, mask_box
+
 
 def get_contour(mask,change_color=True, thresh_value=[210,255]):
     
@@ -82,9 +93,8 @@ def overlay(foreground_mask, foreground, backround):
 
     return added
 
-input_folder = "test_images/"
+input_folder = "sorted_1/"
 outfolder = input_folder[:-1]+"_out/"
-
 if not os.path.exists(outfolder):
     os.makedirs(outfolder)
 
@@ -99,38 +109,50 @@ for file in os.listdir(input_folder):
     img = cv2.imread(img_file)
     original_input = img.copy()
     human_bbox = inference_yolo.main(img)
-    sys.path.append("../U-2-Net/")
-    sys.path.append("../pix2pixHD/")
-    import inference_pix2pix
-    import inference_unet
-    print(human_bbox)
-    cropped_image = img[int(human_bbox[1]):int(human_bbox[3]), int(human_bbox[0]):int(human_bbox[2])]
-    cv2.imwrite("debug/cropped_human.jpg",cropped_image)
- 
+    print("before",human_bbox)
+    if human_bbox is not None:
+        human_bbox[0] = human_bbox[0]-20
+        human_bbox[2] = human_bbox[2]+20
+        
+        if human_bbox[0]  <0:
+           human_bbox[0]  = 0 
 
-    mask = inference_unet.main(cropped_image)
-    cv2.imwrite("debug/%s unet_mask.jpg"%filename,mask)
-    blank_mask  = np.zeros([mask.shape[0],mask.shape[1],3], dtype=np.uint8)
+        if human_bbox[2]  > original_input.shape[1]:
+           human_bbox[2]  = original_input.shape[1]
+        print("after", human_bbox)
 
-    cropped_mask, _, mask_box = get_cropped_clean_mask(mask)
+        sys.path.append("../U-2-Net/")
+        sys.path.append("../pix2pixHD/")
+        import inference_pix2pix
+        import inference_unet
+        print(human_bbox)
+        cropped_image = img[int(human_bbox[1]):int(human_bbox[3]), int(human_bbox[0]):int(human_bbox[2])]
+        cv2.imwrite("debug/cropped_human.jpg",cropped_image)
+     
 
-    cropped_mask_file = "debug/"+filename+"_cropped_mask.jpg"
-    cv2.imwrite(cropped_mask_file,cropped_mask)
+        mask = inference_unet.main(cropped_image)
+        cv2.imwrite("debug/%s unet_mask.jpg"%filename,mask)
+        blank_mask  = np.zeros([mask.shape[0],mask.shape[1],3], dtype=np.uint8)
 
-    translated, traslated_mask = inference_pix2pix.main(cropped_mask_file)
-    cv2.imwrite("debug/translated.jpg", translated)
-    cv2.imwrite("debug/translated_mask.jpg",traslated_mask)
+        cropped_mask, _, mask_box = get_cropped_clean_mask(mask)
 
-    traslated_mask = rgb_to_mask(translated)
-   
-    translated = add_image(blank_mask, translated, mask_box)
-    traslated_mask = add_image(blank_mask, traslated_mask, mask_box)
+        cropped_mask_file = "debug/"+filename+"_cropped_mask.jpg"
+        cv2.imwrite(cropped_mask_file,cropped_mask)
+
+        translated, traslated_mask = inference_pix2pix.main(cropped_mask_file)
+        cv2.imwrite("debug/translated.jpg", translated)
+        cv2.imwrite("debug/translated_mask.jpg",traslated_mask)
+
+        traslated_mask = rgb_to_mask(translated)
+       
+        translated = add_image(blank_mask, translated, mask_box)
+        traslated_mask = add_image(blank_mask, traslated_mask, mask_box)
 
 
-    overlayed = overlay(traslated_mask, translated, cropped_image)
+        overlayed = overlay(traslated_mask, translated, cropped_image)
 
-    cv2.imwrite("debug/overlayed.jpg", overlayed)
-    print(original_input.shape)
-    original_overlayed = add_image(original_input,overlayed,human_bbox)
+        cv2.imwrite("debug/overlayed.jpg", overlayed)
+        print(original_input.shape)
+        original_overlayed = add_image(original_input,overlayed,human_bbox)
 
-    cv2.imwrite(outfile,original_overlayed)
+        cv2.imwrite(outfile,original_overlayed)
