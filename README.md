@@ -2,6 +2,9 @@
 
 https://www.youtube.com/watch?v=nofH1K70tpc&t=30s
 
+![Alt Text](final_overlay.jpg)
+
+
 # VITON-IT
 Virtual-Try On using Image Translation Repo
 
