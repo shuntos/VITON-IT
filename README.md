@@ -11,7 +11,7 @@
 <div align="center">
   <a href="https://github.com/shuntos/VITON-IT/"><b>Project Page</b></a> |
   <a href="https://arxiv.org/pdf/2310.04558.pdf"><b>Paper</b></a> |
-  <a href="[https://www.youtube.com/watch?v=nofH1K70tpc&t=30s](https://www.youtube.com/watch?v=sYdoLNQOzsk)"><b>Video</b></a>
+  <a href="https://www.youtube.com/watch?v=sYdoLNQOzsk"><b>Video</b></a>
 </div>
 
 
